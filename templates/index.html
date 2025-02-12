@@ -5,23 +5,31 @@
     <h1 class="text-2xl font-bold mb-4">Monkey Typewriter Simulation</h1>
     
     <div id="simulation-status" class="mb-4">
-        <p>Status: <span id="status" class="font-bold">Waiting...</span></p>
+        <p>Status: <span id="status" class="font-bold">Waiting... (like waiting for Sleepy Joe to finish a sentence!)</span></p>
         <p>Time Elapsed: <span id="time-elapsed" class="font-mono">0:00</span></p>
-        <p>Progress: <span id="progress" class="font-mono">0/0</span></p>
+        <p>Progress: <span id="progress" class="font-mono">0/0</span> (We're going to fill this progress bar, and Mexico is going to pay for it!)</p>
+    </div>
+
+    <div class="border rounded p-4 bg-gray-50 mt-4">
+        <h2 class="font-bold mb-2">Monkey Statistics:</h2>
+        <div class="space-y-2">
+            <p>Total Attempts: <span id="total-attempts" class="font-mono">0</span></p>
+            <p>Average Attempts per Character: <span id="avg-attempts" class="font-mono">0</span></p>
+        </div>
     </div>
     
     <div class="border rounded p-4 bg-gray-50 mb-4">
-        <h2 class="font-bold mb-2">Target Text:</h2>
+        <h2 class="font-bold mb-2">Target Text (This is what we're Making Great Again!):</h2>
         <div id="target-text" class="font-mono whitespace-pre-wrap text-gray-600"></div>
     </div>
     
     <div class="border rounded p-4 bg-gray-50 mb-4">
-        <h2 class="font-bold mb-2">Context:</h2>
+        <h2 class="font-bold mb-2">Context (Previous lines, and believe me, they're tremendous lines):</h2>
         <div id="context-lines" class="font-mono whitespace-pre-wrap"></div>
     </div>
     
     <div class="border rounded p-4 bg-gray-50">
-        <h2 class="font-bold mb-2">Current Line:</h2>
+        <h2 class="font-bold mb-2">Current Line (Watch these monkeys type like nobody's ever seen before!):</h2>
         <div class="font-mono whitespace-pre-wrap">
             <span id="current-line"></span><span id="random-char" class="text-blue-500"></span>
         </div>
@@ -39,37 +47,51 @@ function updateSimulation() {
     fetch('/api/status')
         .then(response => response.json())
         .then(data => {
+            // Update status with tremendous energy!
             document.getElementById('status').textContent = data.running ? 
-                'Running!' : 
-                'Stopped.';
+                'Running (Like a TRUMP TRAIN!)' : 
+                'Stopped (Like the Democrats trying to code!)';
             
+            // We have the best time display, don't we folks?
             const elapsed = Math.floor(data.elapsed_seconds);
             const minutes = Math.floor(elapsed / 60);
             const seconds = elapsed % 60;
             document.getElementById('time-elapsed').textContent = 
                 `${minutes}:${seconds.toString().padStart(2, '0')}`;
             
+            // Progress like you wouldn't believe!
             document.getElementById('progress').textContent = 
                 `${data.progress.line}/${data.progress.total_lines}`;
             
+            // Show the target text - it's going to be yuge!
             document.getElementById('target-text').textContent = data.target_text;
             
+            // Context lines - the best lines in history, maybe ever
             document.getElementById('context-lines').textContent = 
                 data.context_lines.join('\n');
             
+            // Current line with random character animation
             document.getElementById('current-line').textContent = data.current_line;
 
+            // Handle random character animation - it's going to be spectacular!
             if (data.running) {
                 if (!randomCharInterval) {
                     randomCharInterval = setInterval(() => {
                         document.getElementById('random-char').textContent = generateRandomChar();
                     }, 50);
                 }
-            } else if (randomCharInterval) {
+            } else             if (randomCharInterval) {
                 clearInterval(randomCharInterval);
                 randomCharInterval = null;
                 document.getElementById('random-char').textContent = '';
             }
+
+            // Update statistics
+            document.getElementById('total-attempts').textContent = data.total_attempts.toLocaleString();
+            const avgAttempts = data.total_correct_chars > 0 
+                ? (data.total_attempts / data.total_correct_chars).toFixed(2)
+                : '0.00';
+            document.getElementById('avg-attempts').textContent = avgAttempts;
         });
 }
 

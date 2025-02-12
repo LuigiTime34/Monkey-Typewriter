@@ -41,7 +41,7 @@ function showMessage(message, isError = false) {
 function startSimulation() {
     const text = document.getElementById('target-text').value;
     if (!text.trim()) {
-        showMessage('Please enter some text to simulate:', true);
+        showMessage('Please enter some text to simulate!', true);
         return;
     }
     
@@ -54,10 +54,10 @@ function startSimulation() {
     })
     .then(response => response.json())
     .then(data => {
-        showMessage('Process is running!');
+        showMessage('TREMENDOUS SUCCESS! The simulation is running, and believe me, it\'s going to be spectacular!');
     })
     .catch(error => {
-        showMessage('Something went wrong with the servers, but we have the best people fixing it!', true);
+        showMessage('This is FAKE NEWS! Something went wrong with the servers, but we have the best people fixing it!', true);
     });
 }
 
@@ -67,10 +67,10 @@ function stopSimulation() {
     })
     .then(response => response.json())
     .then(data => {
-        showMessage('Process stopped.');
+        showMessage('We stopped it folks, we stopped it like nobody has ever stopped it before!');
     })
     .catch(error => {
-        showMessage('Error when stopping', true);
+        showMessage('The Deep State is trying to keep this process running, but we won\'t let them!', true);
     });
 }
 </script>

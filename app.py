@@ -28,7 +28,9 @@ current_state = {
     'target_text': '',
     'progress': {'line': 0, 'total_lines': 0},
     'time_started': None,
-    'last_update': None
+    'last_update': None,
+    'total_attempts': 0,
+    'total_correct_chars': 0
 }
 
 # Database Models
@@ -77,11 +79,12 @@ def simulate_typing():
         target_char = target_line[current_pos]
         random_char = generate_random_char() if target_char != '\n' else '\n'
         
+        current_state['total_attempts'] += 1
         if random_char == target_char:
             current_state['current_line'] += random_char
+            current_state['total_correct_chars'] += 1
             
         current_state['last_update'] = datetime.utcnow()
-        time.sleep(0.01)  # Prevent overwhelming the system
 
 # Routes
 @app.route('/')
@@ -149,6 +152,8 @@ def get_status():
         'progress': current_state['progress'],
         'elapsed_seconds': elapsed_time,
         'target_text': current_state['target_text'],
+        'total_attempts': current_state['total_attempts'],
+        'total_correct_chars': current_state['total_correct_chars'],
         'time_started': current_state['time_started'].isoformat() if current_state['time_started'] else None,
         'last_update': current_state['last_update'].isoformat() if current_state['last_update'] else None
     })
