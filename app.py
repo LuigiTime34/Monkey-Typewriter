@@ -13,16 +13,16 @@ from datetime import datetime
 import os
 template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
 app = Flask(__name__, template_folder=template_dir)
-app.config['SECRET_KEY'] = 'your-secret-key-here'  # Change this!
+app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///monkey.db'
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Global variables to store simulation state
 current_state = {
     'running': False,
+    'mode': None,
     'current_line': '',
     'context_lines': deque(maxlen=3),
     'target_text': '',
@@ -33,7 +33,6 @@ current_state = {
     'total_correct_chars': 0
 }
 
-# Database Models
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -83,10 +82,11 @@ def simulate_typing():
         if random_char == target_char:
             current_state['current_line'] += random_char
             current_state['total_correct_chars'] += 1
+        elif current_state['mode'] == 'complex':
+            current_state['current_line'] = ''
             
         current_state['last_update'] = datetime.utcnow()
 
-# Routes
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -116,15 +116,19 @@ def start_simulation():
     
     data = request.get_json()
     target_text = data.get('text', '')
+    mode = data.get('mode', 'simple')
     
     if not target_text:
         return jsonify({'error': 'No text provided'}), 400
         
     current_state['target_text'] = target_text
+    current_state['mode'] = mode
     current_state['progress'] = {'line': 0, 'total_lines': len(target_text.splitlines())}
     current_state['current_line'] = ''
     current_state['context_lines'].clear()
     current_state['time_started'] = datetime.utcnow()
+    current_state['total_attempts'] = 0
+    current_state['total_correct_chars'] = 0
     
     if not current_state['running']:
         current_state['running'] = True
@@ -147,6 +151,7 @@ def get_status():
     
     return jsonify({
         'running': current_state['running'],
+        'mode': current_state['mode'],
         'current_line': current_state['current_line'],
         'context_lines': list(current_state['context_lines']),
         'progress': current_state['progress'],

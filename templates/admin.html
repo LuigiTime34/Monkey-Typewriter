@@ -5,19 +5,33 @@
     <h1 class="text-2xl font-bold mb-4">Simulation Control Panel</h1>
     
     <div class="mb-4">
-        <a href="/" class="inline-block px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
-            View Current Simulation
+        <a href="/" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            View Simulation
         </a>
     </div>
     
     <div class="mb-6">
-        <label class="block mb-2">Target Text:</label>
+        <label class="block mb-2">Upload Text File:</label>
+        <input type="file" id="file-upload" accept=".txt" class="mb-2">
+        <p class="text-sm text-gray-600 mb-4">or</p>
+        <label class="block mb-2">Enter Text:</label>
         <textarea id="target-text" class="w-full h-32 p-2 border rounded" placeholder="Enter text to simulate..."></textarea>
     </div>
+
+    <div class="mb-4">
+        <h3 class="font-bold mb-2">Simulation Modes:</h3>
+        <p class="text-sm text-gray-600 mb-4">
+            <strong>Simple Mode:</strong> Keeps progress when incorrect characters are generated.<br>
+            <strong>Complex Mode:</strong> Resets progress when an incorrect character is generated. Warning: May take significantly longer!
+        </p>
+    </div>
     
-    <div class="flex space-x-4">
-        <button onclick="startSimulation()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-            Start Simulation
+    <div class="flex space-x-4 mb-4">
+        <button onclick="startSimulation('simple')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+            Start Simple Mode
+        </button>
+        <button onclick="startSimulation('complex')" class="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700">
+            Start Complex Mode
         </button>
         <button onclick="stopSimulation()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
             Stop Simulation
@@ -38,10 +52,25 @@ function showMessage(message, isError = false) {
     }, 3000);
 }
 
-function startSimulation() {
+document.getElementById('file-upload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('target-text').value = e.target.result;
+        showMessage('File loaded successfully');
+    };
+    reader.onerror = function(e) {
+        showMessage('Error reading file', true);
+    };
+    reader.readAsText(file);
+});
+
+function startSimulation(mode) {
     const text = document.getElementById('target-text').value;
     if (!text.trim()) {
-        showMessage('Please enter some text to simulate!', true);
+        showMessage('Please enter some text to simulate', true);
         return;
     }
     
@@ -50,14 +79,17 @@ function startSimulation() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text: text })
+        body: JSON.stringify({
+            text: text,
+            mode: mode
+        })
     })
     .then(response => response.json())
     .then(data => {
-        showMessage('TREMENDOUS SUCCESS! The simulation is running, and believe me, it\'s going to be spectacular!');
+        showMessage(`Simulation started in ${mode} mode`);
     })
     .catch(error => {
-        showMessage('This is FAKE NEWS! Something went wrong with the servers, but we have the best people fixing it!', true);
+        showMessage('Error starting simulation', true);
     });
 }
 
@@ -67,10 +99,10 @@ function stopSimulation() {
     })
     .then(response => response.json())
     .then(data => {
-        showMessage('We stopped it folks, we stopped it like nobody has ever stopped it before!');
+        showMessage('Simulation stopped');
     })
     .catch(error => {
-        showMessage('The Deep State is trying to keep this process running, but we won\'t let them!', true);
+        showMessage('Error stopping simulation', true);
     });
 }
 </script>
