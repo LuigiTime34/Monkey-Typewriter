@@ -13,12 +13,16 @@ class ContinuousSimulation:
         self.mode = 'simple'
         self.total_attempts = 0
         self.total_correct_chars = 0
+        self.time_started = None
+        self.time_completed = None
+        self.context_lines = []
         
     def generate_random_char(self):
         return chr(random.randint(32, 126))
         
     def run_simulation(self, app):
         with app.app_context():
+            self.time_started = datetime.utcnow()
             while self.running:
                 if not self.current_text:
                     time.sleep(1)
@@ -27,6 +31,7 @@ class ContinuousSimulation:
                 lines = self.current_text.splitlines()
                 if self.line_number >= len(lines):
                     # Save final state and stop
+                    self.time_completed = datetime.utcnow()
                     state = SimulationState(
                         target_text=self.current_text,
                         current_progress=f"Completed: {self.total_correct_chars} chars, {self.total_attempts} attempts",
@@ -50,6 +55,9 @@ class ContinuousSimulation:
                     db.session.add(state)
                     db.session.commit()
                     
+                    if len(self.context_lines) >= 3:
+                        self.context_lines.pop(0)
+                    self.context_lines.append(self.current_line)
                     self.current_line = ''
                     self.line_number += 1
                     continue
@@ -75,6 +83,9 @@ class ContinuousSimulation:
         self.current_line = ''
         self.total_attempts = 0
         self.total_correct_chars = 0
+        self.time_started = None
+        self.time_completed = None
+        self.context_lines = []
         
         if not self.running:
             self.running = True
@@ -82,6 +93,7 @@ class ContinuousSimulation:
             
     def stop(self):
         self.running = False
+        self.time_completed = datetime.utcnow()
 
 # Create a global simulation instance
 continuous_sim = ContinuousSimulation()
