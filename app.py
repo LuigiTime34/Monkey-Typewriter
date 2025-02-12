@@ -1,13 +1,13 @@
 from flask import Flask, render_template, jsonify, redirect, url_for, request
 from flask_login import LoginManager, UserMixin, login_user, login_required
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash
-import threading
-import time
-import random
-import os
-from collections import deque
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from collections import deque
+import threading
+import random
+import time
+import os
 
 template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
 app = Flask(__name__, template_folder=template_dir)
