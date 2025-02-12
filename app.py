@@ -1,16 +1,14 @@
-from flask import Flask, render_template, request, jsonify, Response, redirect, url_for
-from flask_login import LoginManager, UserMixin, login_user, login_required, current_user
+from flask import Flask, render_template, jsonify, redirect, url_for, request
+from flask_login import LoginManager, UserMixin, login_user, login_required
+from werkzeug.security import check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
-import threading
-import time
-import random
-import os
-from collections import deque
-import json
 from datetime import datetime
-
+from collections import deque
+import threading
+import random
+import time
 import os
+
 template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
 app = Flask(__name__, template_folder=template_dir)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
