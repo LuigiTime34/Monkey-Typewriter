@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">Monkey Typewriter Simulation</h1>
+    
+    <div id="simulation-status" class="mb-4">
+        <p>Status: <span id="status" class="font-bold">Waiting...</span></p>
+        <p>Time Elapsed: <span id="time-elapsed" class="font-mono">0:00</span></p>
+        <p>Progress: <span id="progress" class="font-mono">0/0</span></p>
+    </div>
+    
+    <div class="border rounded p-4 bg-gray-50 mb-4">
+        <h2 class="font-bold mb-2">Target Text:</h2>
+        <div id="target-text" class="font-mono whitespace-pre-wrap text-gray-600"></div>
+    </div>
+    
+    <div class="border rounded p-4 bg-gray-50 mb-4">
+        <h2 class="font-bold mb-2">Context:</h2>
+        <div id="context-lines" class="font-mono whitespace-pre-wrap"></div>
+    </div>
+    
+    <div class="border rounded p-4 bg-gray-50">
+        <h2 class="font-bold mb-2">Current Line:</h2>
+        <div class="font-mono whitespace-pre-wrap">
+            <span id="current-line"></span><span id="random-char" class="text-blue-500"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateRandomChar() {
+    return String.fromCharCode(32 + Math.floor(Math.random() * 95));
+}
+
+let randomCharInterval;
+
+function updateSimulation() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('status').textContent = data.running ? 
+                'Running!' : 
+                'Stopped.';
+            
+            const elapsed = Math.floor(data.elapsed_seconds);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('time-elapsed').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById('progress').textContent = 
+                `${data.progress.line}/${data.progress.total_lines}`;
+            
+            document.getElementById('target-text').textContent = data.target_text;
+            
+            document.getElementById('context-lines').textContent = 
+                data.context_lines.join('\n');
+            
+            document.getElementById('current-line').textContent = data.current_line;
+
+            if (data.running) {
+                if (!randomCharInterval) {
+                    randomCharInterval = setInterval(() => {
+                        document.getElementById('random-char').textContent = generateRandomChar();
+                    }, 50);
+                }
+            } else if (randomCharInterval) {
+                clearInterval(randomCharInterval);
+                randomCharInterval = null;
+                document.getElementById('random-char').textContent = '';
+            }
+        });
+}
+
+// Update every 100ms
+setInterval(updateSimulation, 100);
+</script>
+{% endblock %}

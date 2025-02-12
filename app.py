@@ -10,7 +10,9 @@ from collections import deque
 import json
 from datetime import datetime
 
-app = Flask(__name__)
+import os
+template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
+app = Flask(__name__, template_folder=template_dir)
 app.config['SECRET_KEY'] = 'your-secret-key-here'  # Change this!
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///monkey.db'
 db = SQLAlchemy(app)
@@ -136,11 +138,17 @@ def stop_simulation():
 
 @app.route('/api/status')
 def get_status():
+    elapsed_time = 0
+    if current_state['time_started']:
+        elapsed_time = (datetime.utcnow() - current_state['time_started']).total_seconds()
+    
     return jsonify({
         'running': current_state['running'],
         'current_line': current_state['current_line'],
         'context_lines': list(current_state['context_lines']),
         'progress': current_state['progress'],
+        'elapsed_seconds': elapsed_time,
+        'target_text': current_state['target_text'],
         'time_started': current_state['time_started'].isoformat() if current_state['time_started'] else None,
         'last_update': current_state['last_update'].isoformat() if current_state['last_update'] else None
     })
