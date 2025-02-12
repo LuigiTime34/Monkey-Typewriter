@@ -11,6 +11,20 @@
         <p>Progress: <span id="progress" class="font-mono">0/0</span></p>
     </div>
 
+    <div id="completion-status" class="mb-4 hidden bg-green-100 p-4 rounded">
+        <h2 class="font-bold text-green-800 mb-2">Simulation Complete!</h2>
+        <div class="space-y-2 text-green-700">
+            <p>Completed at: <span id="completion-time" class="font-mono"></span></p>
+            <p>Total time: <span id="total-time" class="font-mono"></span></p>
+            <p>Final statistics:</p>
+            <ul class="list-disc ml-6">
+                <li>Total attempts: <span id="final-attempts" class="font-mono"></span></li>
+                <li>Characters typed: <span id="final-chars" class="font-mono"></span></li>
+                <li>Average attempts per character: <span id="final-avg-attempts" class="font-mono"></span></li>
+            </ul>
+        </div>
+    </div>
+
     <div class="border rounded p-4 bg-gray-50 mt-4">
         <h2 class="font-bold mb-2">Simulation Statistics:</h2>
         <div class="space-y-2">
@@ -38,11 +52,23 @@
 </div>
 
 <script>
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+function formatDateTime(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleString();
+}
+
 function generateRandomChar() {
     return String.fromCharCode(32 + Math.floor(Math.random() * 95));
 }
 
 let randomCharInterval;
+let lastCompletionState = false;
 
 function updateSimulation() {
     fetch('/api/status')
@@ -52,10 +78,7 @@ function updateSimulation() {
             document.getElementById('mode').textContent = data.mode || 'None';
             
             const elapsed = Math.floor(data.elapsed_seconds);
-            const minutes = Math.floor(elapsed / 60);
-            const seconds = elapsed % 60;
-            document.getElementById('time-elapsed').textContent = 
-                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('time-elapsed').textContent = formatTime(elapsed);
             
             document.getElementById('progress').textContent = 
                 `${data.progress.line}/${data.progress.total_lines}`;
@@ -66,6 +89,24 @@ function updateSimulation() {
                 data.context_lines.join('\n');
             
             document.getElementById('current-line').textContent = data.current_line;
+
+            // Handle completion status
+            if (data.is_completed && !lastCompletionState) {
+                const completionDiv = document.getElementById('completion-status');
+                completionDiv.classList.remove('hidden');
+                
+                document.getElementById('completion-time').textContent = 
+                    formatDateTime(data.time_completed);
+                document.getElementById('total-time').textContent = 
+                    formatTime(data.completion_seconds);
+                document.getElementById('final-attempts').textContent = 
+                    data.total_attempts.toLocaleString();
+                document.getElementById('final-chars').textContent = 
+                    data.total_correct_chars.toLocaleString();
+                document.getElementById('final-avg-attempts').textContent = 
+                    (data.total_attempts / data.total_correct_chars).toFixed(2);
+            }
+            lastCompletionState = data.is_completed;
 
             if (data.running) {
                 if (!randomCharInterval) {

@@ -28,9 +28,11 @@ current_state = {
     'target_text': '',
     'progress': {'line': 0, 'total_lines': 0},
     'time_started': None,
+    'time_completed': None,
     'last_update': None,
     'total_attempts': 0,
-    'total_correct_chars': 0
+    'total_correct_chars': 0,
+    'is_completed': False
 }
 
 class User(UserMixin, db.Model):
@@ -64,6 +66,8 @@ def simulate_typing():
         
         if line_num >= len(lines):
             current_state['running'] = False
+            current_state['is_completed'] = True
+            current_state['time_completed'] = datetime.utcnow()
             break
             
         target_line = lines[line_num]
@@ -127,8 +131,10 @@ def start_simulation():
     current_state['current_line'] = ''
     current_state['context_lines'].clear()
     current_state['time_started'] = datetime.utcnow()
+    current_state['time_completed'] = None
     current_state['total_attempts'] = 0
     current_state['total_correct_chars'] = 0
+    current_state['is_completed'] = False
     
     if not current_state['running']:
         current_state['running'] = True
@@ -149,6 +155,10 @@ def get_status():
     if current_state['time_started']:
         elapsed_time = (datetime.utcnow() - current_state['time_started']).total_seconds()
     
+    completion_time = None
+    if current_state['time_completed']:
+        completion_time = (current_state['time_completed'] - current_state['time_started']).total_seconds()
+    
     return jsonify({
         'running': current_state['running'],
         'mode': current_state['mode'],
@@ -156,11 +166,14 @@ def get_status():
         'context_lines': list(current_state['context_lines']),
         'progress': current_state['progress'],
         'elapsed_seconds': elapsed_time,
+        'completion_seconds': completion_time,
         'target_text': current_state['target_text'],
         'total_attempts': current_state['total_attempts'],
         'total_correct_chars': current_state['total_correct_chars'],
         'time_started': current_state['time_started'].isoformat() if current_state['time_started'] else None,
-        'last_update': current_state['last_update'].isoformat() if current_state['last_update'] else None
+        'time_completed': current_state['time_completed'].isoformat() if current_state['time_completed'] else None,
+        'last_update': current_state['last_update'].isoformat() if current_state['last_update'] else None,
+        'is_completed': current_state['is_completed']
     })
 
 if __name__ == '__main__':
