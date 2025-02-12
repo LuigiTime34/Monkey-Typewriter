@@ -72,10 +72,9 @@ class ContinuousSimulation:
                 elif self.mode == 'complex':
                     self.current_line = ''
                     
-                time.sleep(0.01)  # Prevent overwhelming the server
                 
     def start(self, text, mode='simple'):
-        from app import app  # Import app here to avoid circular import
+        from app import app
         
         self.current_text = text
         self.mode = mode
