@@ -1,94 +1,26 @@
 from flask import Flask, render_template, jsonify, redirect, url_for, request
-from flask_login import LoginManager, UserMixin, login_user, login_required
+from flask_login import LoginManager, login_user, login_required
 from werkzeug.security import check_password_hash
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
-from collections import deque
-from continuous_sim import continuous_sim
 import threading
-import random
-import time
 import os
+from models import db, User, SimulationState
 
 template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
 app = Flask(__name__, template_folder=template_dir)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///monkey.db'
-db = SQLAlchemy(app)
+
+db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-current_state = {
-    'running': False,
-    'mode': None,
-    'current_line': '',
-    'context_lines': deque(maxlen=3),
-    'target_text': '',
-    'progress': {'line': 0, 'total_lines': 0},
-    'time_started': None,
-    'time_completed': None,
-    'last_update': None,
-    'total_attempts': 0,
-    'total_correct_chars': 0,
-    'is_completed': False
-}
-
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-
-class SimulationState(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    target_text = db.Column(db.Text, nullable=False)
-    current_progress = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+# Import simulation after app is created
+from simulation import continuous_sim
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
-def generate_random_char():
-    return chr(random.randint(32, 126))
-
-def simulate_typing():
-    global current_state
-    
-    while current_state['running']:
-        if not current_state['target_text']:
-            time.sleep(1)
-            continue
-            
-        lines = current_state['target_text'].splitlines()
-        line_num = current_state['progress']['line']
-        
-        if line_num >= len(lines):
-            current_state['running'] = False
-            current_state['is_completed'] = True
-            current_state['time_completed'] = datetime.utcnow()
-            break
-            
-        target_line = lines[line_num]
-        current_pos = len(current_state['current_line'])
-        
-        if current_pos >= len(target_line):
-            current_state['context_lines'].append(current_state['current_line'])
-            current_state['current_line'] = ''
-            current_state['progress']['line'] += 1
-            continue
-            
-        target_char = target_line[current_pos]
-        random_char = generate_random_char() if target_char != '\n' else '\n'
-        
-        current_state['total_attempts'] += 1
-        if random_char == target_char:
-            current_state['current_line'] += random_char
-            current_state['total_correct_chars'] += 1
-        elif current_state['mode'] == 'complex':
-            current_state['current_line'] = ''
-            
-        current_state['last_update'] = datetime.utcnow()
 
 @app.route('/')
 def index():

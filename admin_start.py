@@ -1,5 +1,6 @@
-from app import User, db, app
+from models import db, User
 from werkzeug.security import generate_password_hash
+from app import app
 
 with app.app_context():
     db.create_all()
