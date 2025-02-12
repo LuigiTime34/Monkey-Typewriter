@@ -4,6 +4,7 @@ from werkzeug.security import check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from collections import deque
+from continuous_sim import continuous_sim
 import threading
 import random
 import time
@@ -114,8 +115,6 @@ def admin():
 @app.route('/api/start', methods=['POST'])
 @login_required
 def start_simulation():
-    global current_state
-    
     data = request.get_json()
     target_text = data.get('text', '')
     mode = data.get('mode', 'simple')
@@ -123,55 +122,27 @@ def start_simulation():
     if not target_text:
         return jsonify({'error': 'No text provided'}), 400
         
-    current_state['target_text'] = target_text
-    current_state['mode'] = mode
-    current_state['progress'] = {'line': 0, 'total_lines': len(target_text.splitlines())}
-    current_state['current_line'] = ''
-    current_state['context_lines'].clear()
-    current_state['time_started'] = datetime.utcnow()
-    current_state['time_completed'] = None
-    current_state['total_attempts'] = 0
-    current_state['total_correct_chars'] = 0
-    current_state['is_completed'] = False
-    
-    if not current_state['running']:
-        current_state['running'] = True
-        threading.Thread(target=simulate_typing, daemon=True).start()
-    
+    continuous_sim.start(target_text, mode)
     return jsonify({'status': 'success'})
 
 @app.route('/api/stop', methods=['POST'])
 @login_required
 def stop_simulation():
-    global current_state
-    current_state['running'] = False
+    continuous_sim.stop()
     return jsonify({'status': 'success'})
 
 @app.route('/api/status')
 def get_status():
-    elapsed_time = 0
-    if current_state['time_started']:
-        elapsed_time = (datetime.utcnow() - current_state['time_started']).total_seconds()
-    
-    completion_time = None
-    if current_state['time_completed']:
-        completion_time = (current_state['time_completed'] - current_state['time_started']).total_seconds()
-    
     return jsonify({
-        'running': current_state['running'],
-        'mode': current_state['mode'],
-        'current_line': current_state['current_line'],
-        'context_lines': list(current_state['context_lines']),
-        'progress': current_state['progress'],
-        'elapsed_seconds': elapsed_time,
-        'completion_seconds': completion_time,
-        'target_text': current_state['target_text'],
-        'total_attempts': current_state['total_attempts'],
-        'total_correct_chars': current_state['total_correct_chars'],
-        'time_started': current_state['time_started'].isoformat() if current_state['time_started'] else None,
-        'time_completed': current_state['time_completed'].isoformat() if current_state['time_completed'] else None,
-        'last_update': current_state['last_update'].isoformat() if current_state['last_update'] else None,
-        'is_completed': current_state['is_completed']
+        'running': continuous_sim.running,
+        'mode': continuous_sim.mode,
+        'current_line': continuous_sim.current_line,
+        'progress': {
+            'line': continuous_sim.line_number,
+            'total_lines': len(continuous_sim.current_text.splitlines()) if continuous_sim.current_text else 0
+        },
+        'total_attempts': continuous_sim.total_attempts,
+        'total_correct_chars': continuous_sim.total_correct_chars
     })
 
 if __name__ == '__main__':
