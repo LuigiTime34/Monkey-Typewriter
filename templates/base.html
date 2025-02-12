@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monkey Typewriter Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-gray-800 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-xl font-bold">Monkey Typewriter</a>
+            <div>
+                {% if current_user.is_authenticated %}
+                    <a href="/admin" class="px-4 py-2 bg-blue-600 rounded">Admin</a>
+                {% else %}
+                    <a href="/login" class="px-4 py-2 bg-blue-600 rounded">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto p-4">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
+
+<!-- templates/index.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">Monkey Typewriter Simulation</h1>
+    
+    <div id="simulation-status" class="mb-4">
+        <p>Status: <span id="status" class="font-bold">Waiting...</span></p>
+        <p>Time Elapsed: <span id="time-elapsed" class="font-mono">0:00</span></p>
+        <p>Progress: <span id="progress" class="font-mono">0/0</span></p>
+    </div>
+    
+    <div class="border rounded p-4 bg-gray-50 mb-4">
+        <h2 class="font-bold mb-2">Context:</h2>
+        <div id="context-lines" class="font-mono whitespace-pre-wrap"></div>
+    </div>
+    
+    <div class="border rounded p-4 bg-gray-50">
+        <h2 class="font-bold mb-2">Current Line:</h2>
+        <div id="current-line" class="font-mono whitespace-pre-wrap"></div>
+    </div>
+</div>
+
+<script>
+function updateSimulation() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('status').textContent = data.running ? 'Running' : 'Stopped';
+            
+            if (data.time_started) {
+                const startTime = new Date(data.time_started);
+                const elapsed = Math.floor((new Date() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('time-elapsed').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            document.getElementById('progress').textContent = 
+                `${data.progress.line}/${data.progress.total_lines}`;
+            
+            document.getElementById('context-lines').textContent = 
+                data.context_lines.join('\n');
+            
+            document.getElementById('current-line').textContent = 
+                data.current_line;
+        });
+}
+
+// Update every 100ms
+setInterval(updateSimulation, 100);
+</script>
+{% endblock %}
+
+<!-- templates/admin.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">Simulation Control Panel</h1>
+    
+    <div class="mb-6">
+        <label class="block mb-2">Target Text:</label>
+        <textarea id="target-text" class="w-full h-32 p-2 border rounded" placeholder="Enter text to simulate..."></textarea>
+    </div>
+    
+    <div class="flex space-x-4">
+        <button onclick="startSimulation()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+            Start Simulation
+        </button>
+        <button onclick="stopSimulation()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+            Stop Simulation
+        </button>
+    </div>
+</div>
+
+<script>
+function startSimulation() {
+    const text = document.getElementById('target-text').value;
+    fetch('/api/start', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: text })
+    });
+}
+
+function stopSimulation() {
+    fetch('/api/stop', {
+        method: 'POST'
+    });
+}
+</script>
+{% endblock %}
+
+<!-- templates/login.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">Login</h1>
+    
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block mb-1">Username:</label>
+            <input type="text" name="username" class="w-full p-2 border rounded" required>
+        </div>
+        
+        <div>
+            <label class="block mb-1">Password:</label>
+            <input type="password" name="password" class="w-full p-2 border rounded" required>
+        </div>
+        
+        <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Login
+        </button>
+    </form>
+</div>
+{% endblock %}
